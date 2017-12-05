@@ -18,6 +18,7 @@ class LexicalAnalyser {
         for (char in input) {
             lexemeProcessor.process(char)
         }
+        lexemeProcessor.process(' ')
     }
 
     fun loadKeyWords(keyWords: Set<String>){
@@ -28,7 +29,13 @@ class LexicalAnalyser {
         lexemeProcessor.delimiters = delimiters
     }
 
-    fun processResult(result: LexemeProcessor.Result) {
+    fun clean() {
+        literals = emptySet()
+        identifiers = emptySet()
+        results = emptyList()
+    }
+
+    private fun processResult(result: LexemeProcessor.Result) {
         var pointer = 0
         var (lexeme, type) = result
         if (type == "ID") {
@@ -38,6 +45,7 @@ class LexicalAnalyser {
         val wordSet = when(type) {
             "ID" -> {identifiers += lexeme; identifiers}
             "KEYWORD" -> keyWords
+            "DELIM" -> keyWords
             "LITERAL" -> {literals += lexeme; literals}
             else -> throw InvalidLexemeTypeException(type)
         }
@@ -46,8 +54,8 @@ class LexicalAnalyser {
         results += LexicalEntry(lexeme, type, pointer)
     }
 
-    fun isKeyWord(lexeme: String): Boolean = keyWords.contains(lexeme)
-    fun getIdType(lexeme: String): String = if (isKeyWord(lexeme)) "KEYWORD" else "ID"
+    private fun isKeyWord(lexeme: String): Boolean = keyWords.contains(lexeme)
+    private fun getIdType(lexeme: String): String = if (isKeyWord(lexeme)) "KEYWORD" else "ID"
 
     data class LexicalEntry(val lexeme: String, val type: String, val pointer: Int) {
         override fun toString(): String = String.format("%10s | %7s | %3d", lexeme, type, pointer)

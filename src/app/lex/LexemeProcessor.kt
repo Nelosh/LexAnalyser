@@ -4,28 +4,30 @@ import app.lex.LexemeProcessor.State.*
 
 class LexemeProcessor {
 
-    var lexeme: String = ""
 
     var delimiters: Set<Char> = emptySet()
 
     var pushResult: (Result) -> Unit = {}
 
-    private var state: State = START
-
-    fun isDelimiter(char: Char): Boolean = delimiters.contains(char)
 
     fun process(char: Char) {
         when(state){
             START -> start(char)
             INT -> processInt(char)
             ID -> processId(char)
-            CONST -> procesConst(char)
+            CONST -> processConst(char)
             DELIM2_ASSIGN -> processDelim2(char, '=')
             DELIM2_NE -> processDelim2(char, '>')
         }
     }
 
-    fun start(char: Char) {
+    private var lexeme: String = ""
+
+    private var state: State = START
+
+    private fun isDelimiter(char: Char): Boolean = delimiters.contains(char)
+
+    private fun start(char: Char) {
         lexeme = "" + char
         state = when {
             char.isDigit() -> INT
@@ -33,21 +35,21 @@ class LexemeProcessor {
             char == '\'' -> CONST
             char == ':' -> DELIM2_ASSIGN
             char == '<' -> DELIM2_NE
-            isDelimiter(char) -> return putResult("KEYWORD")
+            isDelimiter(char) -> return putResult("DELIM")
             char.isWhitespace() -> return
             else -> throw IllegalLexemeCharacter(char)
 
         }
     }
 
-    fun processInt(char: Char) {
+    private fun processInt(char: Char) {
         when {
             char.isDigit() -> lexeme += char
             else -> {putResult("LITERAL"); process(char) }
         }
     }
 
-    fun processId(char: Char) {
+    private fun processId(char: Char) {
         when {
             char.isLetter() -> lexeme += char
             else -> {putResult("ID"); process(char) }
@@ -55,7 +57,7 @@ class LexemeProcessor {
         }
     }
 
-    fun procesConst(char: Char) {
+    private fun processConst(char: Char) {
         lexeme += char
         if (char == '\'')
             putResult("LITERAL")
@@ -64,7 +66,7 @@ class LexemeProcessor {
     fun processDelim2(char: Char, expected: Char) {
         when (char) {
             expected -> {lexeme += char; putResult("KEYWORD")}
-            else -> {putResult("KEYWORD"); process(char)}
+            else -> {putResult("DELIM"); process(char)}
         }
     }
 

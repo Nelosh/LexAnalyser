@@ -2,6 +2,8 @@ package app
 
 import app.lex.LexemeProcessor
 import app.lex.LexicalAnalyser
+import app.lex.RuleBuilder
+import app.lex.SemanticValidator
 import java.io.File
 import java.io.PrintWriter
 
@@ -39,7 +41,6 @@ fun main(args: Array<String>) {
     analyser.loadKeyWords(keyWords)
     analyser.loadDelimiters(delimiters)
 
-
     try {
         analyser.analyse(program)
     } catch (e: LexemeProcessor.IllegalLexemeCharacter) {
@@ -54,23 +55,64 @@ fun main(args: Array<String>) {
             out.println(exceptionMessage + "\n")
         }
         out.println("Key Words: ")
+        println("Key Words: ")
         printToFile(analyser.keyWords, out)
 
         out.println("\nLiterals: ")
+        println("\nLiterals: ")
         printToFile(analyser.literals, out)
 
         out.println("\nIdentifiers: ")
+        println("\nIdentifiers: ")
         printToFile(analyser.identifiers, out)
 
         out.println("\nResult Table: ")
+        println("\nResult Table: ")
         printToFile(analyser.results, out)
     }
+
+
+    val statementFile = File("statement.txt")
+    if (!statementFile.exists()) {
+        exceptionMessage = "Statement file does not exist, should be statement.txt"
+        return output.appendText(exceptionMessage)
+    }
+
+    val text: String = statementFile.readText()
+
+    analyser.clean()
+
+    try {
+        analyser.analyse(text)
+    } catch (e: LexemeProcessor.IllegalLexemeCharacter) {
+        if (e.message != null) exceptionMessage = e.message
+    } catch (e: LexicalAnalyser.InvalidLexemeTypeException) {
+        if (e.message != null) exceptionMessage = e.message
+    }
+
+    val semanticValidator = SemanticValidator(analyser.identifiers)
+    try {
+        val list = analyser.results.map { x -> x.lexeme }
+        semanticValidator.validate(list)
+        println("\nStatement is correct")
+        output.appendText("\nStatement is correct")
+    } catch (e: RuleBuilder.UnexpectedLexemeException) {
+        if (e.message != null) exceptionMessage = e.message
+    } catch (e: RuleBuilder.UnrecognizedLexemeException) {
+        if (e.message != null) exceptionMessage = e.message
+    }
+
+    if (exceptionMessage.isNotEmpty()) {
+        output.appendText(exceptionMessage)
+    }
+
 }
 
 fun configLine(config: List<String>, index: Int): List<String> = config[index].split(" ")
 
 fun printToFile(set: Collection<Any>, out: PrintWriter) {
     for (value in set) {
+        println("       " + value.toString())
         out.println("       " + value.toString())
     }
 }
