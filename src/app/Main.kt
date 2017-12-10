@@ -1,9 +1,6 @@
 package app
 
-import app.lex.LexemeProcessor
-import app.lex.LexicalAnalyser
-import app.lex.RuleBuilder
-import app.lex.SemanticValidator
+import app.lex.*
 import java.io.File
 import java.io.PrintWriter
 
@@ -90,7 +87,7 @@ fun main(args: Array<String>) {
         if (e.message != null) exceptionMessage = e.message
     }
 
-    val semanticValidator = SemanticValidator(analyser.identifiers)
+    val semanticValidator = OldSemanticValidator(analyser.identifiers)
     try {
         val list = analyser.results.map { x -> x.lexeme }
         semanticValidator.validate(list)
@@ -104,6 +101,10 @@ fun main(args: Array<String>) {
 
     if (exceptionMessage.isNotEmpty()) {
         output.appendText(exceptionMessage)
+    }
+
+    for (value in TetradCollector.tetrads) {
+        println(value)
     }
 
 }
