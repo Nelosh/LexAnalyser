@@ -1,7 +1,6 @@
 package app.lex
 
 class LexicalAnalyser {
-
     var literals: Set<String> = emptySet()
     var identifiers: Set<String> = emptySet()
     var keyWords: Set<String> = emptySet()
@@ -15,8 +14,16 @@ class LexicalAnalyser {
 
 
     fun analyse(input: String) {
-        for (char in input) {
-            lexemeProcessor.process(char)
+        for ((i, char) in input.withIndex()) {
+            try {
+                lexemeProcessor.process(char)
+            } catch (e: LexemeProcessor.IllegalLexemeCharacter) {
+                val analysedPart = input.subSequence(0, i)
+                val split = analysedPart.split("\r\n")
+                val line = split.size
+                val position = split.last().length
+                throw AnalisationException(e.message + " at " + line + ":" + position)
+            }
         }
         lexemeProcessor.process(' ')
     }
@@ -61,4 +68,5 @@ class LexicalAnalyser {
         override fun toString(): String = String.format("%10s | %7s | %3d", lexeme, type, pointer)
     }
     class InvalidLexemeTypeException(type: String) : Throwable("Unrecognized lexeme type: " + type)
+    class AnalisationException(message: String) : Throwable(message)
 }

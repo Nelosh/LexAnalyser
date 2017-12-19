@@ -20,7 +20,7 @@ class SemanticValidator(val knownIDs: Set<String>) {
 }
 
 @Deprecated("Cause it's ugly, but it works for lab 3")
-class OldSemanticValidator(val knownIDs: Set<String>) {
+class SyntaxValidator(val knownIDs: Set<String>) {
 
     fun validate(sentence: List<String>): Boolean = ifStatement(sentence).isEmpty()
 
@@ -78,7 +78,7 @@ class OldSemanticValidator(val knownIDs: Set<String>) {
     fun value(sentence: List<String>): List<String> {
         try {
             return functionCall(sentence)
-        } catch (e: UnexpectedLexemException) {
+        } catch (e: UnexpectedLexemeException) {
             return checkNextIsID(sentence)
         }
     }
@@ -98,10 +98,13 @@ class OldSemanticValidator(val knownIDs: Set<String>) {
     fun parameters(sentence: List<String>): List<String> {
         var tail = sentence
         val varName = TetradCollector.nextVariable()
-        do {
+        tail = checkNextIsID(tail)
+        TetradCollector.makeOperation("SET", TetradCollector.nextVariable(), "", varName)
+        while (tail.first() == ",") {
+            tail = tail.drop(1)
             tail = checkNextIsID(tail)
             TetradCollector.makeOperation("SET", TetradCollector.nextVariable(), "", varName)
-        } while (tail.first() == ",")
+        }
         TetradCollector.variable = varName
         return tail
     }
@@ -114,7 +117,7 @@ class OldSemanticValidator(val knownIDs: Set<String>) {
     }
 
     fun isID(lexeme: String) {
-        if (!knownIDs.contains(lexeme)) throw UnrecognizedLexemException(lexeme)
+        if (!knownIDs.contains(lexeme)) throw UnrecognizedLexemeException(lexeme)
     }
 
     fun checkNext(expected: String, sentence: List<String>): List<String> {
@@ -124,9 +127,9 @@ class OldSemanticValidator(val knownIDs: Set<String>) {
     }
 
     fun checkLexeme(toCheck: String, expected: String) {
-        if (toCheck != expected) throw UnexpectedLexemException(toCheck, expected)
+        if (toCheck != expected) throw UnexpectedLexemeException(toCheck, expected)
     }
 
-    class UnexpectedLexemException(lexeme: String, expected: String) : Throwable("Unexpected lemexe: " + lexeme + " found when " + expected + " was expected")
-    class UnrecognizedLexemException(lexeme: String) : Throwable(lexeme + " is not an identifier")
+    class UnexpectedLexemeException(lexeme: String, expected: String) : Throwable("Unexpected lemexe: $lexeme found when $expected was expected")
+    class UnrecognizedLexemeException(lexeme: String) : Throwable(lexeme + " is not an identifier")
 }

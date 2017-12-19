@@ -3,12 +3,8 @@ package app.lex
 import app.lex.LexemeProcessor.State.*
 
 class LexemeProcessor {
-
-
     var delimiters: Set<Char> = emptySet()
-
     var pushResult: (Result) -> Unit = {}
-
 
     fun process(char: Char) {
         when(state){
@@ -65,7 +61,7 @@ class LexemeProcessor {
 
     fun processDelim2(char: Char, expected: Char) {
         when (char) {
-            expected -> {lexeme += char; putResult("KEYWORD")}
+            expected -> {lexeme += char; putResult("DELIM")}
             else -> {putResult("DELIM"); process(char)}
         }
     }
@@ -80,5 +76,4 @@ class LexemeProcessor {
     enum class State {
         START, INT, ID, CONST, DELIM2_ASSIGN, DELIM2_NE
     }
-
 }

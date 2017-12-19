@@ -5,34 +5,19 @@ import java.io.File
 import java.io.PrintWriter
 
 fun main(args: Array<String>) {
-    val output = File("output.txt")
+    val output1 = File("program-output.txt")
     var exceptionMessage: String = ""
 
     val programFile = File("program.txt")
     if (!programFile.exists()) {
         exceptionMessage = "Program file does not exist, should be program.txt"
-        return output.writeText(exceptionMessage)
+        return output1.writeText(exceptionMessage)
     }
 
     val program = programFile.readText()
 
-    val configFile = File("config.txt")
-    if (!configFile.exists()) {
-        exceptionMessage = "Config file does not exist, should be config.txt"
-        return output.writeText(exceptionMessage)
-    }
-
-    val config = configFile.readLines()
-    if (config.size < 2) {
-        exceptionMessage = "Config file does contain all necessary information, " +
-                "should be two line with values separated by single space " +
-                "\n First should contain single character delimiters" +
-                "\n Second should contain keywords"
-        return output.writeText(exceptionMessage)
-    }
-
-    val delimiters = configLine(config, 0).map { elem -> elem[0] }.toSet()
-    val keyWords = configLine(config, 1).toSet().plus(configLine(config, 0))
+    val delimiters = setOf('(', ')', ':', ';', '.', '+', '*', '-', '/', '=', '\'', ',')
+    val keyWords = setOf("procedure", "begin", "case", "of", "end", "if", "or", "then", "else", "boolean", "<>", ":=")
 
     val analyser = LexicalAnalyser()
     analyser.loadKeyWords(keyWords)
@@ -44,10 +29,12 @@ fun main(args: Array<String>) {
         if (e.message != null) exceptionMessage = e.message
     } catch (e: LexicalAnalyser.InvalidLexemeTypeException) {
         if (e.message != null) exceptionMessage = e.message
+    } catch (e: LexicalAnalyser.AnalisationException) {
+        if (e.message != null) exceptionMessage = e.message
     }
 
 
-    output.printWriter().use { out ->
+    output1.printWriter().use { out ->
         if (exceptionMessage.isNotEmpty()) {
             out.println(exceptionMessage + "\n")
         }
@@ -68,11 +55,12 @@ fun main(args: Array<String>) {
         printToFile(analyser.results, out)
     }
 
-
+    exceptionMessage = ""
+    val output2 = File("statement-output.txt")
     val statementFile = File("statement.txt")
     if (!statementFile.exists()) {
         exceptionMessage = "Statement file does not exist, should be statement.txt"
-        return output.appendText(exceptionMessage)
+        return output2.writeText(exceptionMessage)
     }
 
     val text: String = statementFile.readText()
@@ -85,35 +73,66 @@ fun main(args: Array<String>) {
         if (e.message != null) exceptionMessage = e.message
     } catch (e: LexicalAnalyser.InvalidLexemeTypeException) {
         if (e.message != null) exceptionMessage = e.message
-    }
-
-    val semanticValidator = OldSemanticValidator(analyser.identifiers)
-    try {
-        val list = analyser.results.map { x -> x.lexeme }
-        semanticValidator.validate(list)
-        println("\nStatement is correct")
-        output.appendText("\nStatement is correct")
-    } catch (e: RuleBuilder.UnexpectedLexemeException) {
-        if (e.message != null) exceptionMessage = e.message
-    } catch (e: RuleBuilder.UnrecognizedLexemeException) {
+    } catch (e: LexicalAnalyser.AnalisationException) {
         if (e.message != null) exceptionMessage = e.message
     }
 
-    if (exceptionMessage.isNotEmpty()) {
-        output.appendText(exceptionMessage)
+    output2.printWriter().use { out ->
+        if (exceptionMessage.isNotEmpty()) {
+            out.println(exceptionMessage + "\n")
+        }
+        out.println("Key Words: ")
+        println("Key Words: ")
+        printToFile(analyser.keyWords, out)
+
+        out.println("\nLiterals: ")
+        println("\nLiterals: ")
+        printToFile(analyser.literals, out)
+
+        out.println("\nIdentifiers: ")
+        println("\nIdentifiers: ")
+        printToFile(analyser.identifiers, out)
+
+        out.println("\nResult Table: ")
+        println("\nResult Table: ")
+        printToFile(analyser.results, out)
+//    }
+
+        if (exceptionMessage.isNotEmpty()) {
+            println(exceptionMessage)
+            return out.println(exceptionMessage)
+        }
+        val semanticValidator = SyntaxValidator(analyser.identifiers)
+        try {
+            val list = analyser.results.map { x -> x.lexeme }
+            semanticValidator.validate(list)
+        } catch (e: SyntaxValidator.UnexpectedLexemeException) {
+            if (e.message != null) exceptionMessage = e.message
+        } catch (e: SyntaxValidator.UnrecognizedLexemeException) {
+            if (e.message != null) exceptionMessage = e.message
+        }
+
+//    output2.printWriter().use { out ->
+        if (exceptionMessage.isNotEmpty()) {
+            println(exceptionMessage)
+            return out.println(exceptionMessage)
+        }
+
+        println("Statement is correct\n")
+        println("Tetrads: ")
+        out.println("\nStatement is correct")
+        out.println("Tetrads: ")
+        printToFile(TetradCollector.tetrads, out)
     }
 
-    for (value in TetradCollector.tetrads) {
-        println(value)
-    }
+
 
 }
 
-fun configLine(config: List<String>, index: Int): List<String> = config[index].split(" ")
-
 fun printToFile(set: Collection<Any>, out: PrintWriter) {
-    for (value in set) {
-        println("       " + value.toString())
-        out.println("       " + value.toString())
+    for ((i, value) in set.withIndex()) {
+        val formatted = String.format("%3d: " + value.toString(), i)
+        println(formatted)
+        out.println(formatted)
     }
 }
